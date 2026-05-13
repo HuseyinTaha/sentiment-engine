@@ -15,10 +15,10 @@ ENV/
 *.swo
 
 # Data
-data/
+data/raw/
+data/processed/
 *.csv
 *.parquet
-*.json
 
 # Notebooks
 .ipynb_checkpoints/
@@ -31,7 +31,11 @@ Thumbs.db
 *.log
 
 # Model checkpoints
-models/
 *.pth
 *.pkl
 *.h5
+*.bin
+*.safetensors
+
+# HuggingFace cache
+models/checkpoints/
