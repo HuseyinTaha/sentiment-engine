@@ -106,3 +106,31 @@ print(f"\n{eval_metrics['report']}")
 print("\n--- En etkili positive kelimeler ---")
 for word, score in model.get_top_features(n=10, class_idx=2):
     print(f"  {word:<20} {score:.4f}")
+
+
+print("\n" + "="*60)
+print("BERT MODEL TESTİ - TÜRKÇE")
+print("="*60)
+
+from src.models.bert_model import BERTModel
+
+bert_config = ModelConfig(
+    model_name="bert-tr",
+    num_classes=3,
+    max_length=64,
+    batch_size=8,
+    learning_rate=2e-5,
+    num_epochs=3,
+)
+
+bert_model = BERTModel(
+    config=bert_config,
+    model_name_or_path="dbmdz/bert-base-turkish-cased",
+)
+
+bert_metrics = bert_model.train(X_train, y_train, X_test, y_test)
+bert_eval = bert_model.evaluate(X_test, y_test)
+
+print(f"\nTest accuracy : {bert_eval['accuracy']:.4f}")
+print(f"F1 (macro)    : {bert_eval['f1_macro']:.4f}")
+print(f"\n{bert_eval['report']}")
