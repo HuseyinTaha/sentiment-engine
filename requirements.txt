@@ -1,0 +1,14 @@
+streamlit
+torch
+transformers
+scikit-learn
+pandas
+numpy
+datasets
+emoji
+langdetect
+matplotlib
+nltk
+plotly
+snowballstemmer
+zemberek-python
