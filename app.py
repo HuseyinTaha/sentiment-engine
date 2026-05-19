@@ -11,6 +11,11 @@ from src.models.tfidf_model import TFIDFModel
 from src.models.bert_model import BERTModel
 from src.models.base import ModelConfig
 
+from huggingface_hub import hf_hub_download, snapshot_download
+import os
+
+HF_USERNAME = "HusoPasha"
+
 st.set_page_config(
     page_title="SentimentEngine",
     page_icon="🧠",
@@ -35,13 +40,20 @@ st.markdown("""
 
 @st.cache_resource
 def load_tfidf():
+    path = hf_hub_download(
+        repo_id=f"{HF_USERNAME}/sentiment-engine-tfidf-tr",
+        filename="tfidf_tr.pkl"
+    )
     config = ModelConfig(model_name="tfidf-tr", num_classes=3)
     model = TFIDFModel(config=config)
-    model.load("models/saved/tfidf_tr.pkl")
+    model.load(path)
     return model
 
 @st.cache_resource
 def load_bert():
+    path = snapshot_download(
+        repo_id=f"{HF_USERNAME}/sentiment-engine-bert-tr",
+    )
     config = ModelConfig(
         model_name="bert-tr",
         num_classes=3,
@@ -50,9 +62,9 @@ def load_bert():
     )
     model = BERTModel(
         config=config,
-        model_name_or_path="models/saved/bert_tr",
+        model_name_or_path=path,
     )
-    model.load("models/saved/bert_tr")
+    model.load(path)
     return model
 
 @st.cache_resource
@@ -207,7 +219,7 @@ if analyze and text.strip():
     
 elif analyze and not text.strip():
     st.warning("Lütfen bir metin gir.")
-    
+
 
 
 

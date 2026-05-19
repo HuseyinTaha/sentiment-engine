@@ -12,3 +12,4 @@ nltk
 plotly
 snowballstemmer
 zemberek-python
+huggingface_hub
