@@ -69,6 +69,9 @@ class BERTModel(BaseModel):
         self.model_name_or_path = model_name_or_path
         self.device = self._get_device()
         self._tokenizer = None
+        self._label_map = {0: 0, 1: 1, 2: 2}             
+        self._reverse_label_map = {0: 0, 1: 1, 2: 2}     
+        
         super().__init__(config)
 
     def _get_device(self) -> torch.device:
@@ -209,31 +212,35 @@ class BERTModel(BaseModel):
     ) -> dict:
         """Validation seti üzerinde değerlendir."""
         self._model.eval()
-        result = self._predict_raw(X_val)
+        raw_preds, _ = self._predict_raw(X_val)
 
         from sklearn.metrics import accuracy_score, f1_score
         return {
-            "val_accuracy": accuracy_score(y_val, result),
-            "val_f1": f1_score(y_val, result, average="macro", zero_division=0),
+            "val_accuracy": accuracy_score(y_val, raw_preds),
+            "val_f1": f1_score(y_val, raw_preds, average="macro", zero_division=0),
         }
     
     def predict(self, texts: list[str]) -> ModelResult:
         if not self.is_trained:
             raise RuntimeError("Model eğitilmedi")
         
-        raw_preds = self._predict_raw(texts)
+        raw_preds, raw_probs = self._predict_raw(texts)
 
         preds = np.array([
             self._reverse_label_map.get(p,p) for p in raw_preds
         ])
 
-        return ModelResult(predictions=preds)
+        return ModelResult(
+            predictions=preds,
+            probabilities=np.array(raw_probs),
+        )
     
 
-    def _predict_raw(self, texts: list[str]) -> list[str]:
-        """İç kullanım — mapped label döndürür."""
+    def _predict_raw(self, texts: list[str]) -> tuple[list[int], list[list[float]]]:
+        """İç kullanım — mapped label ve olasılıkları döndürür."""
         self._model.eval()
         all_preds = []
+        all_probs = []
 
         dataset = SentimentDataset(
             texts,
@@ -258,10 +265,12 @@ class BERTModel(BaseModel):
                     attention_mask=attention_mask,
                 )
 
+                probs = torch.softmax(outputs.logits, dim=1)
                 preds = torch.argmax(outputs.logits, dim=1)
                 all_preds.extend(preds.cpu().numpy())
+                all_probs.extend(probs.cpu().numpy().tolist())
             
-        return all_preds
+        return all_preds, all_probs
 
 
     def save(self, path: str | Path) -> None:
@@ -269,7 +278,12 @@ class BERTModel(BaseModel):
         path.mkdir(parents=True, exist_ok=True)
         self._model.save_pretrained(path)
         self._tokenizer.save_pretrained(path)
-        self.config.save(path / "config.json")
+        self.config.save(path / "sentiment_config.json") 
+
+        import json
+        with open(path / "label_map.json", "w") as f:
+            json.dump(self._label_map, f)
+
         logger.info("BERT modeli kaydedildi: %s", path)
     
     def load(self, path: str | Path) -> None:
@@ -277,6 +291,15 @@ class BERTModel(BaseModel):
         self._tokenizer = AutoTokenizer.from_pretrained(path)
         self._model = AutoModelForSequenceClassification.from_pretrained(path)
         self._model.to(self.device)
+
+        import json
+        label_map_path = path / "label_map.json"
+        if label_map_path.exists():
+            with open(label_map_path) as f:
+                raw = json.load(f)
+                self._label_map = {int(k): int(v) for k, v in raw.items()}
+                self._reverse_label_map = {v: k for k, v in self._label_map.items()}
+
         self.is_trained = True
         logger.info("BERT modeli yüklendi: %s", path)
     

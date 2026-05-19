@@ -1,0 +1,10 @@
+{
+  "model_name": "tfidf-tr",
+  "num_classes": 3,
+  "max_length": 128,
+  "batch_size": 32,
+  "learning_rate": 2e-05,
+  "num_epochs": 3,
+  "random_seed": 42,
+  "output_dir": "models"
+}

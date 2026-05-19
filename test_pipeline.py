@@ -134,3 +134,32 @@ bert_eval = bert_model.evaluate(X_test, y_test)
 print(f"\nTest accuracy : {bert_eval['accuracy']:.4f}")
 print(f"F1 (macro)    : {bert_eval['f1_macro']:.4f}")
 print(f"\n{bert_eval['report']}")
+
+
+print("\n" + "="*60)
+print("ANALİZ KATMANI TESTİ")
+print("="*60)
+
+from src.analysis.evaluator import ModelEvaluator
+from src.analysis.comparator import ResultComparator
+
+# TF-IDF değerlendir
+tfidf_evaluator = ModelEvaluator(model, output_dir="outputs/analysis")
+tfidf_result = tfidf_evaluator.evaluate(X_test, y_test, "TF-IDF")
+tfidf_evaluator.plot_confusion_matrix(tfidf_result)
+tfidf_evaluator.print_error_analysis(tfidf_result, n=3)
+
+# BERT değerlendir
+bert_evaluator = ModelEvaluator(bert_model, output_dir="outputs/analysis")
+bert_result = bert_evaluator.evaluate(X_test, y_test, "BERT")
+bert_evaluator.plot_confusion_matrix(bert_result)
+bert_evaluator.print_error_analysis(bert_result, n=3)
+
+# Karşılaştır
+comparator = ResultComparator(output_dir="outputs/analysis")
+comparator.add_result(tfidf_result)
+comparator.add_result(bert_result)
+comparator.print_comparison()
+comparator.plot_comparison()
+
+print("\nGrafikler outputs/analysis/ klasörüne kaydedildi")
