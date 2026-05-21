@@ -1,0 +1,10 @@
+{
+  "model_name": "bert-en",
+  "num_classes": 2,
+  "max_length": 64,
+  "batch_size": 16,
+  "learning_rate": 2e-05,
+  "num_epochs": 3,
+  "random_seed": 42,
+  "output_dir": "models"
+}

@@ -50,6 +50,35 @@ def load_tfidf():
     return model
 
 @st.cache_resource
+def load_tfidf_en():
+    config = ModelConfig(model_name="tfidf-en", num_classes=2)
+    model = TFIDFModel(config=config)
+    path = hf_hub_download(
+        repo_id=f"{HF_USERNAME}/sentiment-engine-tfidf-en",
+        filename="tfidf_en.pkl",
+    )
+    model.load(path)
+    return model
+
+@st.cache_resource
+def load_bert_en():
+    config = ModelConfig(
+        model_name="bert-en",
+        num_classes=2,
+        max_length=64,
+        batch_size=16,
+    )
+    model = BERTModel(
+        config=config,
+        model_name_or_path="models/saved/bert_en",
+    )
+    path = snapshot_download(
+        repo_id=f"{HF_USERNAME}/sentiment-engine-bert-en",
+    )
+    model.load(path)
+    return model
+
+@st.cache_resource
 def load_bert():
     path = snapshot_download(
         repo_id=f"{HF_USERNAME}/sentiment-engine-bert-tr",
@@ -91,7 +120,24 @@ def run_model(model, preprocessor, text: str) -> dict:
     result = model.predict([clean])
     pred = int(result.predictions[0])
     probs = result.probabilities[0] if result.probabilities is not None else None
-    return {"label": pred, "probs": probs, "clean": clean}
+
+    num_classes = model.config.num_classes
+
+    if num_classes == 2:
+        prob_labels = ["Negatif", "Pozitif"]
+        prob_colors = ["#E24B4A", "#1D9E75"]
+    else:
+        prob_labels = ["Negatif", "Nötr", "Pozitif"]
+        prob_colors = ["#E24B4A", "#EF9F27", "#1D9E75"]
+        
+    return {
+        "label": pred, 
+        "probs": probs, 
+        "clean": clean, 
+        "prob_labels": prob_labels,
+        "prob_colors": prob_colors,
+    }
+
 
 st.markdown("## 🧠 SentimentEngine")
 st.markdown(
@@ -145,13 +191,18 @@ if analyze and text.strip():
     results = {}
 
     with st.spinner("Analiz ediliyor..."):
+        if lang == "tr":
+            tfidf_fn = load_tfidf
+            bert_fn = load_bert
+        else:
+            tfidf_fn = load_tfidf_en
+            bert_fn = load_bert_en
+
         if use_tfidf:
-            tfidf = load_tfidf()
-            results["TF-IDF"] = run_model(tfidf, preprocessor, text)
+            results["TF-IDF"] = run_model(tfidf_fn(), preprocessor, text)
 
         if use_bert:
-            bert = load_bert()
-            results["BERT"] = run_model(bert, preprocessor, text)
+            results["BERT"] = run_model(bert_fn(), preprocessor, text)
 
     
     lang_label = "Türkçe" if lang == "tr" else "İngilizce"
@@ -191,14 +242,10 @@ if analyze and text.strip():
             if probs is not None:
                 import plotly.graph_objects as go
 
-                present = sorted(set([0, 1, 2]) & set(range(len(probs))))
-                labels = [LABEL_MAP[i] for i in range(len(probs))]
-                colors = ["#E24B4A", "#EF9F27", "#1D9E75"]
-
                 fig = go.Figure(go.Bar(
-                    x=labels,
+                    x=res["prob_labels"],
                     y=[round(p * 100, 1) for p in probs],
-                    marker_color=colors[:len(probs)],
+                    marker_color=res["prob_colors"],
                     text=[f"{p*100:.1f}%" for p in probs],
                     textposition="outside",
                 ))
