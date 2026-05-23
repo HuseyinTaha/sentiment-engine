@@ -192,5 +192,5 @@ result = model.predict(["Ürün çok kaliteliydi, kesinlikle tavsiye ederim"])
 
 ## 👤 Geliştirici
 
-**Hüseyin** — Yazılım Mühendisliği  
+**Hüseyin** — Yazılım Mühendisi
 [GitHub](https://github.com/HuseyinTaha) · [LinkedIn](www.linkedin.com/in/hüseyin-taha-danış-0897002b6)
