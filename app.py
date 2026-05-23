@@ -8,6 +8,7 @@ from src.preprocessing.turkish import TurkishPreprocessor
 from src.preprocessing.english import EnglishPreprocessor
 from src.preprocessing.base import PreprocessConfig
 from src.models.tfidf_model import TFIDFModel
+from src.models.lstm_model import LSTMModel
 from src.models.bert_model import BERTModel
 from src.models.base import ModelConfig
 
@@ -75,6 +76,36 @@ def load_bert_en():
     path = snapshot_download(
         repo_id=f"{HF_USERNAME}/sentiment-engine-bert-en",
     )
+    model.load(path)
+    return model
+
+@st.cache_resource
+def load_lstm_tr():
+    path = snapshot_download(
+        repo_id=f"{HF_USERNAME}/sentiment-engine-lstm-tr",
+    )
+    config = ModelConfig(
+        model_name="lstm-tr",
+        num_classes=3,
+        max_length=128,
+        batch_size=64,
+    )
+    model = LSTMModel(config=config)
+    model.load(path)
+    return model
+
+@st.cache_resource
+def load_lstm_en():
+    path = snapshot_download(
+        repo_id=f"{HF_USERNAME}/sentiment-engine-lstm-en",
+    )
+    config = ModelConfig(
+        model_name="lstm-en",
+        num_classes=2,
+        max_length=128,
+        batch_size=64,
+    )
+    model = LSTMModel(config=config)
     model.load(path)
     return model
 
@@ -147,13 +178,15 @@ st.markdown(
 st.divider()
 
 st.markdown("#### Model seç")
-col1, col2 = st.columns(2)
+col1, col2, col3 = st.columns(3)
 with col1:
     use_tfidf = st.checkbox("TF-IDF", value=True)
 with col2:
+    use_lstm = st.checkbox("LSTM", value=True)
+with col3:
     use_bert = st.checkbox("BERT", value=True)
 
-if not use_tfidf and not use_bert:
+if not use_tfidf and not use_lstm and not use_bert:
     st.warning("En az bir model seçmelisin.")
     st.stop()
 
@@ -193,13 +226,18 @@ if analyze and text.strip():
     with st.spinner("Analiz ediliyor..."):
         if lang == "tr":
             tfidf_fn = load_tfidf
+            lstm_fn  = load_lstm_tr
             bert_fn = load_bert
         else:
             tfidf_fn = load_tfidf_en
+            lstm_fn  = load_lstm_en
             bert_fn = load_bert_en
 
         if use_tfidf:
             results["TF-IDF"] = run_model(tfidf_fn(), preprocessor, text)
+
+        if use_lstm:
+            results["LSTM"] = run_model(lstm_fn(), preprocessor, text)
 
         if use_bert:
             results["BERT"] = run_model(bert_fn(), preprocessor, text)
@@ -217,10 +255,13 @@ if analyze and text.strip():
     with meta_col2:
         st.metric("Token sayısı", token_count)
     with meta_col3:
-        st.metric(
-            "Modeller aynı fikirde",
-            "Evet ✓" if agree else "Hayır ✗",
-        )
+        if len(results) > 1:
+            st.metric(
+                "Modeller aynı fikirde",
+                "Evet ✓" if agree else "Hayır ✗",
+            )
+        else:
+            st.metric("Aktif model", list(results.keys())[0])
     
     st.divider()
 
@@ -257,7 +298,11 @@ if analyze and text.strip():
                     paper_bgcolor="rgba(0,0,0,0)",
                     showlegend=False,
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(
+                    fig, 
+                    use_container_width=True,
+                    key=f"chart_{model_name}_{hash(text)}",
+                )
 
 
     with st.expander("Preprocessing sonucu"):

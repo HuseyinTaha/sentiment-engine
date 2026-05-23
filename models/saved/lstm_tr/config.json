@@ -1,0 +1,10 @@
+{
+  "model_name": "lstm-tr",
+  "num_classes": 3,
+  "max_length": 128,
+  "batch_size": 64,
+  "learning_rate": 0.001,
+  "num_epochs": 10,
+  "random_seed": 42,
+  "output_dir": "models"
+}

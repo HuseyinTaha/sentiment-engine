@@ -7,6 +7,7 @@ from src.preprocessing.turkish import TurkishPreprocessor
 from src.preprocessing.english import EnglishPreprocessor
 from src.preprocessing.base import PreprocessConfig
 from src.models.tfidf_model import TFIDFModel
+from src.models.lstm_model import LSTMModel
 from src.models.bert_model import BERTModel
 from src.models.base import ModelConfig
 from sklearn.model_selection import train_test_split
@@ -24,7 +25,7 @@ def get_args():
     )
     parser.add_argument(
         "--model",
-        choices=["tfidf","bert", "all"],
+        choices=["tfidf","bert", "lstm", "all"],
         default="all",
         help="Hangi model eğitilecek",
     )
@@ -168,6 +169,38 @@ def train_bert_en(X_train, X_test, y_train, y_test):
     print("Kaydedildi → models/saved/bert_en/")
     return bert_model
 
+def train_lstm_tr(X_train, X_test, y_train, y_test):
+    print("\nTürkçe LSTM eğitiliyor...")
+    config = ModelConfig(
+        model_name="lstm-tr",
+        num_classes=3,
+        max_length=128,
+        batch_size=64,
+        learning_rate=1e-3,
+        num_epochs=10,
+    )
+
+    model = LSTMModel(config=config)
+    model.train(X_train, y_train, X_test, y_test)
+    model.save("models/saved/lstm_tr")
+    print("Kaydedildi → models/saved/lstm_tr/")
+    return model
+
+def train_lstm_en(X_train, X_test, y_train, y_test):
+    print("\nİngilizce LSTM eğitiliyor...")
+    config = ModelConfig(
+        model_name="lstm-en",
+        num_classes=2,
+        max_length=128,
+        batch_size=64,
+        learning_rate=1e-3,
+        num_epochs=10,
+    )
+    model = LSTMModel(config=config)
+    model.train(X_train, y_train, X_test, y_test)
+    model.save("models/saved/lstm_en")
+    print("Kaydedildi → models/saved/lstm_en/")
+    return model
 
 def main():
     args = get_args()
@@ -176,6 +209,7 @@ def main():
     do_en = args.lang in ("en", "all")
     do_tfidf = args.model in ("tfidf", "all")
     do_bert = args.model in ("bert", "all")
+    do_lstm = args.model in ("lstm", "all")
 
     tr_data = prepare_tr_data(args.max_samples) if do_tr else None
     en_data = prepare_en_data(args.max_samples) if do_en else None
@@ -191,9 +225,15 @@ def main():
     
     if do_en and do_bert:
         train_bert_en(*en_data)
+
+    if do_tr and do_lstm:
+        train_lstm_tr(*tr_data)
+
+    if do_en and do_lstm:
+        train_lstm_en(*en_data)
     
     print("\nTüm eğitimler tamamlandı.")
 
 if __name__ == "__main__":
     main()
-    
+
