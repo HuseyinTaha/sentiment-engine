@@ -169,160 +169,309 @@ def run_model(model, preprocessor, text: str) -> dict:
         "prob_colors": prob_colors,
     }
 
+tab1, tab2 = st.tabs(["Tek Metin Analizi", "Toplu CSV Analizi"])
 
-st.markdown("## 🧠 SentimentEngine")
-st.markdown(
-    "Türkçe & İngilizce metinler için duygu analizi. "
-    "TF-IDF ve BERT modellerini karşılaştır."
-)
-st.divider()
-
-st.markdown("#### Model seç")
-col1, col2, col3 = st.columns(3)
-with col1:
-    use_tfidf = st.checkbox("TF-IDF", value=True)
-with col2:
-    use_lstm = st.checkbox("LSTM", value=True)
-with col3:
-    use_bert = st.checkbox("BERT", value=True)
-
-if not use_tfidf and not use_lstm and not use_bert:
-    st.warning("En az bir model seçmelisin.")
-    st.stop()
-
-st.markdown("#### Metin gir")
-text = st.text_area(
-    label="metin",
-    placeholder="Türkçe veya İngilizce bir metin yaz...",
-    height=120,
-    label_visibility="collapsed",
-)
-
-ornek_metinler = [
-    "Ürün gerçekten çok kaliteli, kesinlikle tavsiye ederim!",
-    "Bu kadar kötü bir ürün görmedim, param çöpe gitti.",
-    "İdare eder, ne iyi ne kötü.",
-    "This product is absolutely amazing, best purchase ever!",
-    "Terrible quality, do not waste your money.",
-]
-
-with st.expander("Ornek metinler"):
-    for ornek in ornek_metinler:
-        if st.button(ornek[:60] + "...", key=ornek):
-            text = ornek
-            st.rerun()
-
-analyze = st.button("Analiz et", type="primary", use_container_width=True)
-
-if analyze and text.strip():
-    lang = detect_language(text)
-    token_count = len(text.split())
-
-    preprocessors = load_preprocessors()
-    preprocessor = preprocessors[lang]
-
-    results = {}
-
-    with st.spinner("Analiz ediliyor..."):
-        if lang == "tr":
-            tfidf_fn = load_tfidf
-            lstm_fn  = load_lstm_tr
-            bert_fn = load_bert
-        else:
-            tfidf_fn = load_tfidf_en
-            lstm_fn  = load_lstm_en
-            bert_fn = load_bert_en
-
-        if use_tfidf:
-            results["TF-IDF"] = run_model(tfidf_fn(), preprocessor, text)
-
-        if use_lstm:
-            results["LSTM"] = run_model(lstm_fn(), preprocessor, text)
-
-        if use_bert:
-            results["BERT"] = run_model(bert_fn(), preprocessor, text)
-
-    
-    lang_label = "Türkçe" if lang == "tr" else "İngilizce"
-    agree = len(set(r["label"] for r in results.values())) == 1
-
-    st.divider()
-    st.markdown("### Sonuçlar")
-
-    meta_col1, meta_col2, meta_col3 = st.columns(3)
-    with meta_col1:
-        st.metric("Dil", lang_label)
-    with meta_col2:
-        st.metric("Token sayısı", token_count)
-    with meta_col3:
-        if len(results) > 1:
-            st.metric(
-                "Modeller aynı fikirde",
-                "Evet ✓" if agree else "Hayır ✗",
-            )
-        else:
-            st.metric("Aktif model", list(results.keys())[0])
-    
+with tab1:
+    st.markdown("## 🧠 SentimentEngine")
+    st.markdown(
+        "Türkçe & İngilizce metinler için duygu analizi. "
+        "TF-IDF ve BERT modellerini karşılaştır."
+    )
     st.divider()
 
-    cols = st.columns(len(results))
+    st.markdown("#### Model seç")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        use_tfidf = st.checkbox("TF-IDF", value=True)
+    with col2:
+        use_lstm = st.checkbox("LSTM", value=True)
+    with col3:
+        use_bert = st.checkbox("BERT", value=True)
 
-    for col, (model_name, res) in zip(cols, results.items()):
-        with col:
-            label = res["label"]
-            probs = res["probs"]
+    if not use_tfidf and not use_lstm and not use_bert:
+        st.warning("En az bir model seçmelisin.")
+        st.stop()
 
-            st.markdown(f"**{model_name}**")
-            st.markdown(
-                f"<span class='{BADGE_MAP[label]}'>"
-                f"{EMOJI_MAP[label]} {LABEL_MAP[label]}</span>",
-                unsafe_allow_html=True,
+    st.markdown("#### Metin gir")
+    text = st.text_area(
+        label="metin",
+        placeholder="Türkçe veya İngilizce bir metin yaz...",
+        height=120,
+        label_visibility="collapsed",
+    )
+
+    ornek_metinler = [
+        "Ürün gerçekten çok kaliteli, kesinlikle tavsiye ederim!",
+        "Bu kadar kötü bir ürün görmedim, param çöpe gitti.",
+        "İdare eder, ne iyi ne kötü.",
+        "This product is absolutely amazing, best purchase ever!",
+        "Terrible quality, do not waste your money.",
+    ]
+
+    with st.expander("Ornek metinler"):
+        for ornek in ornek_metinler:
+            if st.button(ornek[:60] + "...", key=ornek):
+                text = ornek
+                st.rerun()
+
+    analyze = st.button("Analiz et", type="primary", use_container_width=True)
+
+    if analyze and text.strip():
+        lang = detect_language(text)
+        token_count = len(text.split())
+
+        preprocessors = load_preprocessors()
+        preprocessor = preprocessors[lang]
+
+        results = {}
+
+        with st.spinner("Analiz ediliyor..."):
+            if lang == "tr":
+                tfidf_fn = load_tfidf
+                lstm_fn  = load_lstm_tr
+                bert_fn = load_bert
+            else:
+                tfidf_fn = load_tfidf_en
+                lstm_fn  = load_lstm_en
+                bert_fn = load_bert_en
+
+            if use_tfidf:
+                results["TF-IDF"] = run_model(tfidf_fn(), preprocessor, text)
+
+            if use_lstm:
+                results["LSTM"] = run_model(lstm_fn(), preprocessor, text)
+
+            if use_bert:
+                results["BERT"] = run_model(bert_fn(), preprocessor, text)
+
+
+        lang_label = "Türkçe" if lang == "tr" else "İngilizce"
+        agree = len(set(r["label"] for r in results.values())) == 1
+
+        st.divider()
+        st.markdown("### Sonuçlar")
+
+        meta_col1, meta_col2, meta_col3 = st.columns(3)
+        with meta_col1:
+            st.metric("Dil", lang_label)
+        with meta_col2:
+            st.metric("Token sayısı", token_count)
+        with meta_col3:
+            if len(results) > 1:
+                st.metric(
+                    "Modeller aynı fikirde",
+                    "Evet ✓" if agree else "Hayır ✗",
+                )
+            else:
+                st.metric("Aktif model", list(results.keys())[0])
+
+        st.divider()
+
+        cols = st.columns(len(results))
+
+        for col, (model_name, res) in zip(cols, results.items()):
+            with col:
+                label = res["label"]
+                probs = res["probs"]
+
+                st.markdown(f"**{model_name}**")
+                st.markdown(
+                    f"<span class='{BADGE_MAP[label]}'>"
+                    f"{EMOJI_MAP[label]} {LABEL_MAP[label]}</span>",
+                    unsafe_allow_html=True,
+                )
+                st.write("")
+
+                if probs is not None:
+                    import plotly.graph_objects as go
+
+                    fig = go.Figure(go.Bar(
+                        x=res["prob_labels"],
+                        y=[round(p * 100, 1) for p in probs],
+                        marker_color=res["prob_colors"],
+                        text=[f"{p*100:.1f}%" for p in probs],
+                        textposition="outside",
+                    ))
+                    fig.update_layout(
+                        height=260,
+                        margin=dict(t=20, b=10, l=10, r=10),
+                        yaxis=dict(range=[0, 115], showticklabels=False),
+                        plot_bgcolor="rgba(0,0,0,0)",
+                        paper_bgcolor="rgba(0,0,0,0)",
+                        showlegend=False,
+                    )
+                    st.plotly_chart(
+                        fig, 
+                        use_container_width=True,
+                        key=f"chart_{model_name}_{hash(text)}",
+                    )
+
+
+        with st.expander("Preprocessing sonucu"):
+            for model_name, res in results.items():
+                st.markdown(f"**{model_name}: `{res['clean']}`")
+
+    elif analyze and not text.strip():
+        st.warning("Lütfen bir metin gir.")
+
+
+with tab2:
+    st.markdown("#### CSV dosyası yükle")
+    st.markdown(
+        "CSV dosyanızda analiz edilecek metinleri içeren bir kolon olmalı. "
+        "Dosya yüklendikten sonra hangi kolonu analiz etmek istediğinizi seçebilirsiniz."
+    )
+
+    uploaded_file = st.file_uploader(              # (2)
+        "CSV dosyası seç",
+        type=["csv"],
+        help="UTF-8 formatında CSV dosyası yükleyin"
+    )
+
+    if uploaded_file:
+        import pandas as pd
+        import io
+
+        try:
+            df = pd.read_csv(uploaded_file, encoding="utf-8")
+        except UnicodeDecodeError:
+            df = pd.read_csv(uploaded_file, encoding="latin-1")
+        
+        st.success(f"{len(df)} satır yüklendi")
+        st.dataframe(df.head(3), use_container_width=True)
+
+        text_col = st.selectbox(
+            "Hangi kolon analiz edilsin?",
+            options=df.columns.tolist(),
+        )
+
+        st.markdown("#### Model seç")
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            csv_tfidf = st.checkbox("TF-IDF", value=True, key="csv_tfidf")
+        with c2:
+            csv_lstm = st.checkbox("LSTM", value=False, key="csv_lstm")
+        with c3:
+            csv_bert = st.checkbox("BERT", value=False, key="csv_bert")
+
+        min_slider = min(10, len(df))                          
+        max_slider = min(1000, len(df))
+
+        if min_slider >= max_slider:                           
+            max_rows = len(df)
+            st.info(f"Tüm {len(df)} satır analiz edilecek")
+        else:
+            max_rows = st.slider(
+            "Maksimum satır sayısı",
+            min_value=min_slider,
+            max_value=max_slider,
+            value=min_slider,
+            step=10,
+        )
+
+        if st.button("Toplu analiz başlat", type="primary", use_container_width=True):
+            df_analyze = df[[text_col]].head(max_rows).copy()
+            df_analyze[text_col] = df_analyze[text_col].fillna("").astype(str)
+
+            texts = df_analyze[text_col].tolist()
+
+            sample = " ".join(texts[:5])
+            lang = detect_language(sample)
+            lang_label = "Türkçe" if lang == "tr" else "İngilizce"
+            st.info(f"Dil tespiti: {lang_label}")
+
+            preprocessors = load_preprocessors()
+            preprocessor = preprocessors[lang]
+
+            if lang == "tr":
+                tfidf_fn = load_tfidf
+                lstm_fn  = load_lstm_tr
+                bert_fn  = load_bert
+            else:
+                tfidf_fn = load_tfidf_en
+                lstm_fn  = load_lstm_en
+                bert_fn  = load_bert_en
+            
+            progress = st.progress(0, text="Analiz başlıyor...")
+            clean_texts = []
+
+            for i, text in enumerate(texts):
+                clean_texts.append(preprocessor.process(text))
+                if i % 10 == 0:
+                    progress.progress(
+                        int((i / len(texts)) * 40),
+                        text=f"Metin temizleniyor: {i}/{len(texts)}"
+                    )
+            
+            active_models = {}
+            if csv_tfidf:
+                active_models["TF-IDF"] = tfidf_fn()
+            if csv_lstm:
+                active_models["LSTM"] = lstm_fn()
+            if csv_bert:
+                active_models["BERT"] = bert_fn()
+
+            progress.progress(50, text="Modeller yüklendi, tahmin yapılıyor...")
+
+            for model_name, model in active_models.items():
+                result = model.predict(clean_texts)          
+                preds = result.predictions
+
+                df_analyze[f"{model_name}_label"] = [
+                    LABEL_MAP.get(int(p), str(p)) for p in preds
+                ]
+                df_analyze[f"{model_name}_emoji"] = [
+                    EMOJI_MAP.get(int(p), "❓") for p in preds
+                ]
+
+                if result.probabilities is not None:
+                    df_analyze[f"{model_name}_confidence"] = [
+                        round(float(max(prob)) * 100, 1)       
+                        for prob in result.probabilities
+                    ]
+
+            progress.progress(100, text="Tamamlandı!")
+
+            st.markdown("#### Sonuçlar")
+            st.dataframe(df_analyze, use_container_width=True)
+
+            st.markdown("#### Dağılım")
+            label_cols = [c for c in df_analyze.columns if c.endswith("_label")]
+
+            dist_cols = st.columns(len(label_cols))
+            for col, label_col in zip(dist_cols, label_cols):
+                with col:
+                    model_name = label_col.replace("_label", "")
+                    counts = df_analyze[label_col].value_counts()
+
+                    import plotly.graph_objects as go
+                    fig = go.Figure(go.Pie(                     
+                        labels=counts.index.tolist(),
+                        values=counts.values.tolist(),
+                        marker_colors=["#E24B4A", "#EF9F27", "#1D9E75"],
+                        hole=0.4,
+                    ))
+                    fig.update_layout(
+                        title=model_name,
+                        height=250,
+                        margin=dict(t=40, b=10, l=10, r=10),
+                        showlegend=True,
+                        paper_bgcolor="rgba(0,0,0,0)",
+                    )
+                    st.plotly_chart(
+                        fig,
+                        use_container_width=True,
+                        key=f"pie_{model_name}",
+                    )
+
+            st.markdown("#### Sonuçları indir")
+            csv_buffer = io.StringIO()
+            df_analyze.to_csv(csv_buffer, index=False, encoding="utf-8")
+
+            st.download_button(
+                label="Sonuçları CSV olarak indir",
+                data=csv_buffer.getvalue().encode("utf-8"),
+                file_name="sentiment_results.csv",
+                mime="text/csv",
+                use_container_width=True,
             )
-            st.write("")
-
-            if probs is not None:
-                import plotly.graph_objects as go
-
-                fig = go.Figure(go.Bar(
-                    x=res["prob_labels"],
-                    y=[round(p * 100, 1) for p in probs],
-                    marker_color=res["prob_colors"],
-                    text=[f"{p*100:.1f}%" for p in probs],
-                    textposition="outside",
-                ))
-                fig.update_layout(
-                    height=260,
-                    margin=dict(t=20, b=10, l=10, r=10),
-                    yaxis=dict(range=[0, 115], showticklabels=False),
-                    plot_bgcolor="rgba(0,0,0,0)",
-                    paper_bgcolor="rgba(0,0,0,0)",
-                    showlegend=False,
-                )
-                st.plotly_chart(
-                    fig, 
-                    use_container_width=True,
-                    key=f"chart_{model_name}_{hash(text)}",
-                )
-
-
-    with st.expander("Preprocessing sonucu"):
-        for model_name, res in results.items():
-            st.markdown(f"**{model_name}: `{res['clean']}`")
-    
-elif analyze and not text.strip():
-    st.warning("Lütfen bir metin gir.")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
